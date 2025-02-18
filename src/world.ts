@@ -1,6 +1,15 @@
 import { colors } from "./colors";
 import { shapes } from "./shapes";
 
+const bombSFX = new Audio();
+bombSFX.src = "img/explosion.flac"
+bombSFX.volume = 1;
+bombSFX.loop = false;
+
+
+
+
+
 class Square {
     rect: SVGRectElement;
     x: number;
@@ -55,22 +64,33 @@ class Square {
     addBonus(value: number){
         this.bonus = value;
 
-        const aliceTumbling = [
-            { fill: '#004545'},
-            { fill: "#454545" },
-            { fill: '#004545'}
-        ]
+        // this.rect.setAttribute("fill", "#00ff0000");
+            // this.rect.classList.add("bonus")
+
+        const pngImage = document.createElementNS("http://www.w3.org/2000/svg", "image");
+        pngImage.setAttribute("href", "img/star.png");
+        pngImage.setAttribute("x", this.rect.getAttribute("x"));
+        pngImage.setAttribute("y", this.rect.getAttribute("y"));
+        pngImage.setAttribute("width", this.rect.getAttribute("width"));
+        pngImage.setAttribute("height", this.rect.getAttribute("height"));
+        this.rect.parentNode.appendChild(pngImage);
+
+        // const aliceTumbling = [
+        //     { fill: '#000000'},
+        //     { fill: "#330033" },
+        //     { fill: '#000000'}
+        // ]
         
-        const aliceTiming = {
-            duration: 500,
-            easing: 'ease-in-out',
-            iterations: Infinity,
-        }
+        // const aliceTiming = {
+        //     duration: 500,
+        //     easing: 'ease-in-out',
+        //     iterations: Infinity,
+        // }
         
-        this.animation = this.rect.animate(
-            aliceTumbling, 
-            aliceTiming
-        )
+        // this.animation = this.rect.animate(
+        //     aliceTumbling, 
+        //     aliceTiming
+        // )
     }
 
     animate(srcColor: string, destColor: string){
@@ -147,7 +167,7 @@ export class Tile {
         for (const square of this.squares) {
             square.rect.setAttribute('fill-opacity', '0');
             square.rect.setAttribute('stroke', colors[color]);
-            square.rect.setAttribute('stroke-width', '2');
+            square.rect.setAttribute('stroke-width', '10');
             square.rect.removeAttribute('stroke-dasharray');
         }
     }
@@ -155,16 +175,45 @@ export class Tile {
     setBAD(color: number) {
         this.color = color;
         for (const square of this.squares) {
-            square.rect.setAttribute('fill-opacity', '0');
+            square.rect.setAttribute('fill-opacity', '0.25');
             square.rect.setAttribute('stroke', colors[color]);
-            square.rect.setAttribute('stroke-width', '2');
+            square.rect.setAttribute('stroke-width', '4');
             square.rect.setAttribute('stroke-dasharray', '3, 6'); // Adjust as needed
         }
     }
 
-    rotate(){
-        console.log("rotate")
+    flip(){
+        for (const square of this.squares){
+            square.rect.remove();
+        }
+        this.squares.splice(0,this.squares.length);
 
+        const newPixelsList = new Array<[number,number]>();
+
+        let minx = 0;
+        let miny = 0;
+        for (const [x,y] of this.pixelsList){
+            const newx = x;
+            const newy = -y;
+            newPixelsList.push([newx,newy]);
+            minx = Math.min(minx, newx);
+            miny = Math.min(miny, newy);
+        }
+
+        this.pixelsList = new Array();
+        for (const [x,y] of newPixelsList){
+            this.pixelsList.push([-minx+x, -miny+y]);
+        }
+
+        for (const [x,y] of this.pixelsList){
+            const square = new Square(x,y, this.size, 0);
+            this.svg.appendChild(square.rect);
+            this.squares.push(square);
+        }
+        this.colorTile(this.color)
+    }
+
+    rotate(){
         for (const square of this.squares){
             square.rect.remove();
         }
@@ -205,19 +254,27 @@ export class World {
     m: number;
     size: number;
     svg: SVGSVGElement;
+    scoresDiv: HTMLDivElement;
+    tilesStackGroup: SVGElement;
     tiles: Map<number, Tile>;
     tilesStack: Array<number>;
+    selectedTilesGroup: SVGElement;
+    keysPressed: Set<string>;
 
     constructor(n: number, m: number, tilesNb: number){
 
 
-        this.size = Math.floor( window.innerHeight/n );
+        this.size = Math.floor( (window.innerHeight-80) /n );
         this.matrix = new Array(n);
         this.n = n;
         this.m = m;
         this.squares = new Array();
         this.tiles = new Map();
         this.tilesStack = new Array();
+        this.scoresDiv = document.createElement("div");
+        this.scoresDiv.id = "scores"
+        document.body.appendChild(this.scoresDiv);
+        this.keysPressed = new Set();
 
 
         for (let i = 0; i < n; i ++){
@@ -227,14 +284,19 @@ export class World {
             }
         }
 
-        this.svg = this.initSvg()
+        this.svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        this.tilesStackGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        this.selectedTilesGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+
+        this.initSvg();
+        
 
         for (let i= 0; i < tilesNb; i ++){
             this.tilesStack.push(-1);
             this.addRandomTile();
         }
 
-        for (let i = 0; i < 5; i ++){
+        for (let i = 0; i < 10; i ++){
             this.addRandomBonus();
         }
 
@@ -252,28 +314,31 @@ export class World {
         square.addBonus(5);
     }
 
-    initSvg(): SVGSVGElement{
-        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        svg.setAttribute("position", "relative")
-        svg.setAttribute("width", window.innerWidth.toString());
-        svg.setAttribute("height", window.innerHeight.toString());
+    initSvg(){
+        this.svg.setAttribute("position", "relative")
+        this.svg.setAttribute("width", window.innerWidth.toString());
+        this.svg.setAttribute("height", window.innerHeight.toString());
 
         window.addEventListener("resize", () => {
-            svg.setAttribute("width", window.innerWidth.toString());
-            svg.setAttribute("height", window.innerHeight.toString());
+            this.svg.setAttribute("width", window.innerWidth.toString());
+            this.svg.setAttribute("height", window.innerHeight.toString());
         });
+
 
 
         for (let i = 0; i < this.n; i++) {
             for (let j = 0; j < this.m; j++) {
                 const square = new Square(i,j, this.size, this.matrix[i][j]);
                 this.squares.push(square);
-                svg.appendChild(square.rect);
+                this.svg.appendChild(square.rect);
             }
         }
+
+        this.svg.appendChild(this.tilesStackGroup);
+        this.svg.appendChild(this.selectedTilesGroup);
+
     
-        document.body.appendChild(svg);
-        return svg;
+        document.body.appendChild(this.svg);
     }
 
     getCoord(x: number, y: number){
@@ -291,12 +356,12 @@ export class World {
             if (this.tilesStack[i] == -1){
                 this.tilesStack[i] = tile.id;
 
-                const x =  this.n*this.size + 10;
+                const x =  this.n*this.size + this.size*2;
                 tile.svg.setAttribute("x", x.toString())
-                const y = 30 + i * 100;
+                const y = 30 + i * this.size*4;
                 tile.svg.setAttribute("y", y.toString())
                 this.tiles.set(tile.id, tile);
-                this.svg.appendChild(tile.svg);
+                this.tilesStackGroup.appendChild(tile.svg);
 
             }
         }
@@ -320,6 +385,9 @@ export class World {
         let isAdj = false;
 
         for (const [b,a] of tile.pixelsList){
+            if ( (i+a < this.n && 0 <= i+a && j+b < this.m && 0<= j+b) == false){
+                return false;
+            }
             if (typeof this.squares[i+a+this.m*(j+b)].playerId != "undefined") {
                 return false
             }
@@ -376,6 +444,8 @@ export class World {
 
     destroyBomb( x: number, y: number){
         const [i,j] = this.getCoord(x,y);
+
+        bombSFX.play();
 
         this.destroy( [
         [i-1,j-1],[i,j-1],[i+1,j-1],
