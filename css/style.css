@@ -1,0 +1,41 @@
+html,
+body {
+  font-family: Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  margin: 20px;
+  padding: 0;
+  overflow: hidden;
+  background-color: black;
+}
+
+#scores {
+  width: 100px;
+  height: 100px;
+  position: fixed;
+  top: 0;
+  right: 30px;
+  /* border: 1px solid rgb(139, 166, 255) */
+}
+
+.score {
+  font-family: 'Arial', sans-serif;
+  font-size: 48px;
+  text-align: center;
+  padding: 10px;
+
+  width: 100%;
+  color: rgb(0, 0, 0);
+}
+
+.bomb {
+  background-image: url("../img/explosion.png");
+  background-size: 100%;
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+}
+
+
+.bonus {
+  background-image: url("../img/explosion.png");
+  background-size: 100%;
+}
