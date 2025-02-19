@@ -1,5 +1,6 @@
 html,
 body {
+  font-size: 48px;
   font-family: Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
   margin: 20px;
   padding: 0;
@@ -17,8 +18,7 @@ body {
 }
 
 .score {
-  font-family: 'Arial', sans-serif;
-  font-size: 48px;
+
   text-align: center;
   padding: 10px;
 
@@ -38,4 +38,12 @@ body {
 .bonus {
   background-image: url("../img/explosion.png");
   background-size: 100%;
+}
+
+#timer {
+  color: rgb(211, 211, 211);
+  position: fixed;
+  margin: 20px;
+  bottom: 0;
+  right: 0;
 }
