@@ -23,8 +23,8 @@ function setup(){
     });
 
     window.addEventListener('keydown', (event: KeyboardEvent) => {
-        console.log("keyboard connected")
         if (hasKeyboardPlayer == false){
+            console.log("keyboard connected")
             hasKeyboardPlayer = true;
             players.push(new Player(undefined, world, players.length, ((1+players.length) % colors.length)))
         }

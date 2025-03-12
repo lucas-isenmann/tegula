@@ -17,7 +17,7 @@ class Square {
     size: number;
     i: number;
     j: number;
-    playerId: number | undefined;
+    playerId: number;
     bonus: number;
     animation: undefined | Animation;
 
@@ -34,12 +34,11 @@ class Square {
         this.rect.setAttribute("z-index", "-1")
         this.rect.setAttribute("width", `${size}`);
         this.rect.setAttribute("height", `${size}`);
-        this.playerId = undefined;
+        this.playerId = 0;
         this.bonus = 0;
 
-       
+        
 
-        this.rect.setAttribute("fill", colors[color]);
 
         this.bonusImg = document.createElementNS("http://www.w3.org/2000/svg", "image");
         this.size = size;
@@ -49,17 +48,14 @@ class Square {
         this.bonus = 0;
         this.setColor(0);
         this.bonusImg.remove();
+        this.playerId = 0;
+    }
+
+    getOwner(){
+        return this.playerId;
     }
 
 
-
-    ownedBy(playerId: number){
-        if (typeof this.playerId == "undefined"){
-            return false;
-        } else {
-            return this.playerId == playerId;
-        }
-    }
 
     containsPoint(x: number, y: number): boolean{
         return x <= this.x + this.size &&
@@ -68,15 +64,34 @@ class Square {
                 this.y <= y
     }
 
+    setImpossible(color: number){
+        if (color == 1){
+            this.rect.setAttribute("href", "img/tile_blue_impossible.svg");
+        }
+        if (color == 2){
+            this.rect.setAttribute("href", "img/tile_pink_impossible.svg");
+        }
+        if (color == 3){
+            this.rect.setAttribute("href", "img/tile_green_impossible.svg");
+        }
+        if (color == 4){
+            this.rect.setAttribute("href", "img/tile_orange_impossible.svg");
+        }
+
+    }
+
     setColor(color: number){
+        this.playerId = color;
         if (color == 1){
             this.rect.setAttribute("href", "img/tile_blue.svg");
         } else if (color == 2){
             this.rect.setAttribute("href", "img/tile_pink.svg");
+        } else if (color == 3){
+            this.rect.setAttribute("href", "img/tile_green.svg");
+        } else if (color == 4){
+            this.rect.setAttribute("href", "img/tile_orange.svg");
         }else {
             this.rect.setAttribute("href", "img/tile_neutral.svg");
-
-
         }
         // this.rect.setAttribute("fill", colors[color]);
     }
@@ -185,20 +200,22 @@ export class Tile {
     setOK(color: number) {
         this.color = color;
         for (const square of this.squares) {
-            square.rect.setAttribute('fill-opacity', '0');
-            square.rect.setAttribute('stroke', colors[color]);
-            square.rect.setAttribute('stroke-width', '10');
-            square.rect.removeAttribute('stroke-dasharray');
+            square.setColor(color);
+            // square.rect.setAttribute('fill-opacity', '0');
+            // square.rect.setAttribute('stroke', colors[color]);
+            // square.rect.setAttribute('stroke-width', '10');
+            // square.rect.removeAttribute('stroke-dasharray');
         }
     }
 
     setBAD(color: number) {
         this.color = color;
         for (const square of this.squares) {
-            square.rect.setAttribute('fill-opacity', '0.25');
-            square.rect.setAttribute('stroke', colors[color]);
-            square.rect.setAttribute('stroke-width', '4');
-            square.rect.setAttribute('stroke-dasharray', '3, 6'); // Adjust as needed
+            square.setImpossible(color);
+            // square.rect.setAttribute('fill-opacity', '0.25');
+            // square.rect.setAttribute('stroke', colors[color]);
+            // square.rect.setAttribute('stroke-width', '4');
+            // square.rect.setAttribute('stroke-dasharray', '3, 6'); // Adjust as needed
         }
     }
 
@@ -268,7 +285,6 @@ export class Tile {
 
 export class World {
    
-    matrix: Array<Array<number>>;
     squares: Array<Square>;
     n: number;
     m: number;
@@ -288,7 +304,6 @@ export class World {
 
 
         this.size = Math.floor( (window.innerHeight-80) /n );
-        this.matrix = new Array(n);
         this.n = n;
         this.m = m;
         this.squares = new Array();
@@ -309,12 +324,7 @@ export class World {
 
 
 
-        for (let i = 0; i < n; i ++){
-            this.matrix[i] = new Array(m);
-            for (let j = 0; j < n ; j ++){
-                this.matrix[i][j] = Math.floor(Math.random()*1);
-            }
-        }
+        
 
         this.svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         this.tilesStackGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -393,7 +403,7 @@ export class World {
 
         for (let i = 0; i < this.n; i++) {
             for (let j = 0; j < this.m; j++) {
-                const square = new Square(i,j, this.size, this.matrix[i][j]);
+                const square = new Square(i,j, this.size, 0);
                 this.squares.push(square);
                 this.svg.appendChild(square.rect);
             }
@@ -436,7 +446,7 @@ export class World {
 
     isThereStartColor(color: number){
         for (const square of this.squares){
-            if (square.rect.getAttribute("fill") == colors[color]){
+            if (square.getOwner() == color){
                 return true;
             }
         }
@@ -449,38 +459,41 @@ export class World {
         const [i,j] = this.getCoord(x,y);
 
         const hasStart = this.isThereStartColor(color);
+        console.log(`has start: ${hasStart}`)
         let isAdj = false;
 
         for (const [b,a] of tile.pixelsList){
             if ( (i+a < this.n && 0 <= i+a && j+b < this.m && 0<= j+b) == false){
+                console.log("out of grid")
                 return false;
             }
-            if (typeof this.squares[i+a+this.m*(j+b)].playerId != "undefined") {
+            if (this.squares[i+a+this.m*(j+b)].playerId != 0) {
+                console.log(`square ${i+a} ${j+b} already controlled by `, this.squares[i+a+this.m*(j+b)].playerId)
                 return false
             }
 
-            if (hasStart && isAdj == false){
+            if (isAdj == false){
                 if (i+a+1 < this.n &&
                     j+b+1 < this.m &&
-                    this.squares[i+a+1+this.m*(j+b+1)].ownedBy(playerId)
+                    this.squares[i+a+1+this.m*(j+b+1)].getOwner() == playerId
                     ) {
                     isAdj = true;
                 } 
                 if (i+a-1 >= 0 &&
                     j+b+1 < this.m &&
-                    this.squares[i+a-1+this.m*(j+b+1)].ownedBy(playerId)
+                    this.squares[i+a-1+this.m*(j+b+1)].getOwner() == playerId
                     ) {
                     isAdj = true;
                 }
                 if (i+a-1 >= 0 &&
                     j+b-1 >= 0 &&
-                    this.squares[i+a-1+this.m*(j+b-1)].ownedBy(playerId)
+                    this.squares[i+a-1+this.m*(j+b-1)].getOwner() == playerId
                     ) {
                     isAdj = true;
                 }
                 if (i+a+1 < this.n &&
                     j+b-1 >= 0 &&
-                    this.squares[i+a+1+this.m*(j+b-1)].ownedBy(playerId)
+                    this.squares[i+a+1+this.m*(j+b-1)].getOwner() == playerId
                     ) {
                     isAdj = true;
                 }
@@ -527,12 +540,7 @@ export class World {
         for ( const [i,j] of list){
             if (0 <= i && i <= this.n && 0 <= j && j <= this.m){
                 const square = this.squares[i+ this.m*j];
-                square.playerId = undefined;
-                const color = square.rect.getAttribute("fill")
-                if (color != null){
-                    square.animate(color, "gray")
-
-                }
+                square.playerId = 0;
                 square.setColor(0);
             }
         }

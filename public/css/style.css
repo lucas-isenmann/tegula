@@ -1,7 +1,13 @@
+@font-face {
+  font-family: 'aldo';
+  src: url('../AldotheApache.ttf');
+}
+
 html,
 body {
+  color: white;
   font-size: 48px;
-  font-family: Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-family: aldo, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
   margin: 20px;
   padding: 0;
   overflow: hidden;
@@ -18,12 +24,9 @@ body {
 }
 
 .score {
-
   text-align: center;
   padding: 10px;
-
   width: 100%;
-  color: rgb(0, 0, 0);
 }
 
 .bomb {

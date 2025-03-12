@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="32.721092mm"
+   height="32.721092mm"
+   viewBox="0 0 32.721092 32.721092"
+   version="1.1"
+   id="svg552"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   sodipodi:docname="tile_green_impossible.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview554"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="3.0687836"
+     inkscape:cx="64.031885"
+     inkscape:cy="76.577573"
+     inkscape:window-width="1366"
+     inkscape:window-height="719"
+     inkscape:window-x="0"
+     inkscape:window-y="25"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs549">
+    <linearGradient
+       id="linearGradient2932"
+       inkscape:swatch="solid">
+      <stop
+         style="stop-color:#db0090;stop-opacity:1;"
+         offset="0"
+         id="stop2930" />
+    </linearGradient>
+  </defs>
+  <g
+     inkscape:label="Calque 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-77.964455,-132.18246)">
+    <g
+       id="g4428"
+       style="fill:#03ab00;fill-opacity:0.63410914">
+      <rect
+         style="fill:#03ab00;fill-opacity:0.63410914;stroke-width:0.0983235"
+         id="rect111"
+         width="31.543362"
+         height="4.6874614"
+         x="-49.831291"
+         y="170.29211"
+         ry="2.3437307"
+         transform="rotate(-43.580974)" />
+      <rect
+         style="fill:#03ab00;fill-opacity:0.63410914;stroke-width:0.076208"
+         id="rect2960"
+         width="18.949343"
+         height="4.6874614"
+         x="-43.534279"
+         y="161.37071"
+         ry="2.3437307"
+         transform="rotate(-43.580974)" />
+      <rect
+         style="fill:#03ab00;fill-opacity:0.63410914;stroke-width:0.0741609"
+         id="rect2962"
+         width="17.944979"
+         height="4.6874614"
+         x="-43.032097"
+         y="179.17372"
+         ry="2.3437307"
+         transform="rotate(-43.580974)" />
+    </g>
+  </g>
+</svg>

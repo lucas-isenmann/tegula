@@ -30,7 +30,7 @@ export class Player {
 
     constructor(gamepad: GamepadWrapper | undefined, world: World, nbPlayers: number, colorNb: number){
         this.name = Math.random().toString();
-        this.id = Math.floor(Math.random()*10000);
+        this.id = colorNb;
         this.colorNb = colorNb; // Math.floor(1+Math.random()*(colors.length-1));
         this.gamepad = gamepad;
         this.x = 100+Math.random()*50;
