@@ -1,17 +1,17 @@
+import { bombSFX, timerAudio } from "./audio";
 import { colors } from "./colors";
 import { shapes } from "./shapes";
 
-const bombSFX = new Audio();
-bombSFX.src = "img/explosion.flac"
-bombSFX.volume = 1;
-bombSFX.loop = false;
+const ENDTIME = 60;
+
 
 
 
 
 
 class Square {
-    rect: SVGRectElement;
+    rect: SVGImageElement;
+    bonusImg: SVGElement;
     x: number;
     y: number;
     size: number;
@@ -26,7 +26,9 @@ class Square {
         this.y = i*size;
         this.i = i;
         this.j = j;
-        this.rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+
+        this.rect = document.createElementNS("http://www.w3.org/2000/svg", "image");
+        this.rect.setAttribute("href", "img/tile_neutral.svg");
         this.rect.setAttribute("x", this.x.toString());
         this.rect.setAttribute("y", this.y.toString());
         this.rect.setAttribute("z-index", "-1")
@@ -35,11 +37,21 @@ class Square {
         this.playerId = undefined;
         this.bonus = 0;
 
-        this.rect.setAttribute("fill", colors[color]);
-        this.size = size;
+       
 
-        
+        this.rect.setAttribute("fill", colors[color]);
+
+        this.bonusImg = document.createElementNS("http://www.w3.org/2000/svg", "image");
+        this.size = size;
     }
+
+    reset(){
+        this.bonus = 0;
+        this.setColor(0);
+        this.bonusImg.remove();
+    }
+
+
 
     ownedBy(playerId: number){
         if (typeof this.playerId == "undefined"){
@@ -57,8 +69,16 @@ class Square {
     }
 
     setColor(color: number){
-        
-        this.rect.setAttribute("fill", colors[color]);
+        if (color == 1){
+            this.rect.setAttribute("href", "img/tile_blue.svg");
+        } else if (color == 2){
+            this.rect.setAttribute("href", "img/tile_pink.svg");
+        }else {
+            this.rect.setAttribute("href", "img/tile_neutral.svg");
+
+
+        }
+        // this.rect.setAttribute("fill", colors[color]);
     }
 
     addBonus(value: number){
@@ -66,14 +86,14 @@ class Square {
 
         // this.rect.setAttribute("fill", "#00ff0000");
             // this.rect.classList.add("bonus")
-
-        const pngImage = document.createElementNS("http://www.w3.org/2000/svg", "image");
-        pngImage.setAttribute("href", "img/star.png");
-        pngImage.setAttribute("x", this.rect.getAttribute("x"));
-        pngImage.setAttribute("y", this.rect.getAttribute("y"));
-        pngImage.setAttribute("width", this.rect.getAttribute("width"));
-        pngImage.setAttribute("height", this.rect.getAttribute("height"));
-        this.rect.parentNode.appendChild(pngImage);
+        this.bonusImg = document.createElementNS("http://www.w3.org/2000/svg", "image");
+        this.bonusImg.setAttribute("href", "img/star2.svg");
+        this.bonusImg.setAttribute("x", this.x.toString());
+        this.bonusImg.setAttribute("y", this.y.toString());
+        this.bonusImg.setAttribute("width", this.size.toString());
+        this.bonusImg.setAttribute("height", this.size.toString());
+        this.rect.parentNode.appendChild(this.bonusImg);
+        
 
         // const aliceTumbling = [
         //     { fill: '#000000'},
@@ -158,7 +178,7 @@ export class Tile {
     colorTile(color: number){
         this.color = color;
         for (const square of this.squares){
-            square.rect.setAttribute("fill", colors[color]);
+            square.setColor(color);
         }
     }
 
@@ -260,6 +280,9 @@ export class World {
     tilesStack: Array<number>;
     selectedTilesGroup: SVGElement;
     keysPressed: Set<string>;
+    lastOperation: number;
+    timerDiv: HTMLDivElement;
+    over: boolean = false;
 
     constructor(n: number, m: number, tilesNb: number){
 
@@ -275,6 +298,15 @@ export class World {
         this.scoresDiv.id = "scores"
         document.body.appendChild(this.scoresDiv);
         this.keysPressed = new Set();
+
+        // Timer div
+        this.lastOperation = Date.now();
+        this.timerDiv = document.createElement("div");
+        this.timerDiv.id = "timer";
+        this.timerDiv.innerHTML = ""
+
+        document.body.appendChild(this.timerDiv);
+
 
 
         for (let i = 0; i < n; i ++){
@@ -300,7 +332,40 @@ export class World {
             this.addRandomBonus();
         }
 
+        const world = this;
+        setInterval(() => {
+            world.updateTimer()
+        }, 1000);
+
     }
+
+    restart(){
+        this.over = false;
+        this.lastOperation = Date.now();
+
+        for (const square of this.squares){
+            square.reset()
+        }
+
+        for (let i = 0; i < 10; i ++){
+            this.addRandomBonus();
+        }
+    }
+
+    updateTimer(){
+        const delta = ( Math.floor((Date.now() - this.lastOperation)/1000 ));
+        const t = ENDTIME - delta;
+        if (t <= 0){
+            this.timerDiv.innerHTML = "END";
+            this.over = true;
+        } else if ( t < 10){
+            timerAudio.play();
+            this.timerDiv.innerHTML = t.toString();
+        } else {
+            this.timerDiv.innerHTML = ""
+        }
+    }
+
 
     addRandomBonus(){
         const coords = new Array<Square>();
@@ -379,6 +444,8 @@ export class World {
     }
 
     canPut(tile: Tile, x: number, y: number, color: number, playerId: number): boolean {
+        if (this.over) return false;
+
         const [i,j] = this.getCoord(x,y);
 
         const hasStart = this.isThereStartColor(color);
@@ -443,9 +510,11 @@ export class World {
     }
 
     destroyBomb( x: number, y: number){
+        if (this.over) return false;
         const [i,j] = this.getCoord(x,y);
 
         bombSFX.play();
+        this.lastOperation = Date.now();
 
         this.destroy( [
         [i-1,j-1],[i,j-1],[i+1,j-1],
@@ -454,6 +523,7 @@ export class World {
     }
 
     destroy( list: Array<[number, number]>){
+        if (this.over) return false;
         for ( const [i,j] of list){
             if (0 <= i && i <= this.n && 0 <= j && j <= this.m){
                 const square = this.squares[i+ this.m*j];
@@ -479,7 +549,11 @@ export class World {
 
    
     tryPut(tile: Tile, x: number, y: number, color: number, playerId: number): number | undefined {
+        if (this.over) return;
+
         if (this.canPut(tile, x, y, color, playerId)){
+            timerAudio.play();
+
             const [i,j] = this.getCoord(x,y);
             let points = tile.pixelsList.length;
 
@@ -496,7 +570,7 @@ export class World {
                 square.animate("gray", colors[color]);
             }
     
-
+            this.lastOperation = Date.now();
             this.removeTile(tile.id);
             tile.svg.remove();
     

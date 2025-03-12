@@ -1,6 +1,8 @@
 import { AXES, GamepadWrapper, BUTTONS } from "gamepad-wrapper";
 import { Tile, World } from "./world";
 import { colors } from "./colors";
+import { cancelAudio } from "./audio";
+import { isMenuOn, menuLeft, menuRight, nextChoice, previousChoice, turnOnMenu, validateMenuChoice } from "./menu";
 
 
 
@@ -18,11 +20,13 @@ export class Player {
     points: number;
     scoreDiv: HTMLDivElement;
     nbBombs: number;
+
+    bombDiv: HTMLDivElement;
     bombDivs: Array<HTMLDivElement>;
     pointsDiv: HTMLDivElement;
     keyUsed: string;
     bombZone: SVGElement;
-    loadBomb: boolean = false;
+    isBombLoaded: boolean = false;
 
     constructor(gamepad: GamepadWrapper | undefined, world: World, nbPlayers: number, colorNb: number){
         this.name = Math.random().toString();
@@ -44,18 +48,9 @@ export class Player {
         this.bombZone.setAttribute("y", this.y.toString());
         this.bombZone.setAttribute("width", (3*this.world.size).toString());
         this.bombZone.setAttribute("height", (3*this.world.size).toString());
-        // this.bombZone.setAttribute("fill", "red");
         this.bombZone.setAttribute("opacity", "0");
         world.svg.appendChild(this.bombZone);
         
-
-        // this.svg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        // this.svg.setAttribute("x", this.x.toString());
-        // this.svg.setAttribute("y", this.y.toString());
-        // this.svg.setAttribute("width", `10`);
-        // this.svg.setAttribute("height", `10`);
-        // this.svg.setAttribute("fill", colors[this.colorNb]);
-        // world.svg.appendChild(this.svg);
 
         this.svg = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         this.svg.setAttribute("position", "relative")
@@ -79,16 +74,16 @@ export class Player {
         this.scoreDiv.appendChild(pointsDiv)
         this.pointsDiv = pointsDiv;
 
-        const bombDiv = document.createElement("div");
+        this.bombDiv = document.createElement("div");
         this.bombDivs = [];
         for (let i = 0; i < this.nbBombs; i ++){
             const img = document.createElement("div");
             img.classList.add("bomb");
             // img.src = "img/bomb.png"
-            bombDiv.appendChild(img);
+            this.bombDiv.appendChild(img);
             this.bombDivs.push(img);
         }
-        this.scoreDiv.appendChild(bombDiv)
+        this.scoreDiv.appendChild(this.bombDiv)
 
         // const pointsX = this.world.m*this.world.size + 40;
         // const pointsY = 500 + 30*nbPlayers;
@@ -109,7 +104,7 @@ export class Player {
         // // world.svg.appendChild(pointsSvg);
 
 
-        const pointsText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        // const pointsText = document.createElementNS("http://www.w3.org/2000/svg", "text");
         // pointsText.setAttribute("font-size", "24")
         // pointsText.setAttribute("x", pointsX.toString());
         // pointsText.setAttribute("y", (pointsY+20).toString());
@@ -123,13 +118,43 @@ export class Player {
         console.log("new player", this.id)
     }
 
+    reset(){
+        // Reset points
+        this.updatePoints(-this.points);
+
+        // Reset bombs
+        for (let i = 0; i < 3- this.nbBombs; i ++){
+            const img = document.createElement("div");
+            img.classList.add("bomb");
+            this.bombDiv.appendChild(img);
+            this.bombDivs.push(img);
+        }
+        this.nbBombs = 3;
+
+        // Reset tile
+        if (typeof this.tile != "undefined"){
+            this.tile.svg.remove();
+        }
+        this.tile = undefined;
+
+        this.x = 100+Math.random()*50;
+        this.y = 100+Math.random()*50;
+        this.keyUsed = "";
+        this.isBombLoaded = false;
+        this.bombZone.setAttribute("opacity", "0")
+    }
+
     updatePoints(add: number){
         this.points += add;
         this.pointsDiv.textContent = this.points.toString();
     }
 
     cancel(){
-        if (typeof this.tile != "undefined"){
+        if (this.isBombLoaded){
+            this.isBombLoaded = false;
+            this.bombZone.setAttribute("opacity", "0")
+        } else if (typeof this.tile != "undefined"){
+            cancelAudio.play();
             this.tile.svg.remove();
             this.tile = undefined;
             this.updatePoints(-1);
@@ -263,15 +288,25 @@ export class Player {
         this.x += d;
         this.svg.setAttribute("cx", this.x.toString());
         this.updateTilePos()
-
     }
+
+
 
 
     checkEvent(): void {
         if (typeof this.gamepad != "undefined"){
             this.gamepad.update();
+            if (this.gamepad.getButtonDown(BUTTONS.STANDARD.TRIGGER_LEFT)){
+                turnOnMenu();
+            }
+
             if (this.gamepad.getButtonDown(BUTTONS.STANDARD.RC_BOTTOM) ){ // A
-                this.put()
+                if (isMenuOn()){
+                    validateMenuChoice();
+                }
+                else {
+                    this.put()
+                }
             }
 
             if (this.gamepad.getButtonDown(BUTTONS.STANDARD.RC_TOP) ){ //X
@@ -279,16 +314,44 @@ export class Player {
             } else if ( this.gamepad.getButtonDown(BUTTONS.STANDARD.BUMPER_LEFT) ){
                 this.flip()
             }
-
+ 
             if (this.gamepad.getButtonDown(BUTTONS.STANDARD.RC_RIGHT) ){ //B
                 this.cancel()
             }
 
             if (this.gamepad.getButtonDown(BUTTONS.STANDARD.RC_LEFT) ){ //Y
-                this.askExplode();
+                if (this.isBombLoaded){
+                    this.askExplode()
+                    this.isBombLoaded = false;
+                    this.bombZone.setAttribute("opacity", "0")
+                } else if (this.nbBombs > 0) {
+                    this.isBombLoaded = true;
+                    this.bombZone.setAttribute("opacity", "0.5")
+                }
             }
 
+            if (this.gamepad.getButtonDown(BUTTONS.STANDARD.BUMPER_RIGHT)){
+                turnOnMenu();
+            }
 
+            if (isMenuOn()){
+                if (this.gamepad.getButtonDown(BUTTONS.STANDARD.LC_BOTTOM) ){
+                    previousChoice();
+                }
+    
+                if (this.gamepad.getButtonDown(BUTTONS.STANDARD.LC_TOP) ){
+                    menuRight();
+                }
+                if (this.gamepad.getButtonDown(BUTTONS.STANDARD.LC_LEFT) ){
+                    menuLeft();
+                }
+    
+                if (this.gamepad.getButtonDown(BUTTONS.STANDARD.LC_RIGHT) ){
+                    nextChoice()
+                }
+
+                return;
+            }
 
             if (this.gamepad.getButton(BUTTONS.STANDARD.LC_BOTTOM) ){
                 this.moveUp(2);
@@ -317,9 +380,7 @@ export class Player {
                 this.moveRight(axisLeftX * this.speed);
             }
     
-            const axisLeftY = this.gamepad.getAxis(
-                AXES.STANDARD.THUMBSTICK_LEFT_Y,
-            );
+            const axisLeftY = this.gamepad.getAxis( AXES.STANDARD.THUMBSTICK_LEFT_Y,);
             if (axisLeftY < -0.2){
                 this.moveUp(-axisLeftY * this.speed);
             }
@@ -369,25 +430,29 @@ export class Player {
             }
 
             if ( this.world.keysPressed.has("a") ){ //B
-                this.cancel()
+                if (this.keyUsed == ""){
+                    this.cancel()
+                    this.keyUsed = "a";
+                }
             }
+            else if (this.keyUsed == "a"){
+                this.keyUsed = "";
+            }
+            
 
             // Ask bomb
             if ( this.world.keysPressed.has("x") ){ //B
                 if (this.keyUsed == ""){
                     this.keyUsed = "x";
-                    if (this.loadBomb){
+                    if (this.isBombLoaded){
                         this.askExplode()
-                        this.loadBomb = false;
+                        this.isBombLoaded = false;
                         this.bombZone.setAttribute("opacity", "0")
-                    } else {
-                        this.loadBomb = true;
+                    } else if (this.nbBombs > 0) {
+                        this.isBombLoaded = true;
                         this.bombZone.setAttribute("opacity", "0.5")
                     }
-                    
-                    
                 }
-                
             }
             else {
                 if (this.keyUsed == "x"){

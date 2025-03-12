@@ -1,4 +1,5 @@
 import { colors } from "./colors";
+import { initMenu, turnOffMenu, turnOnMenu } from "./menu";
 import { Player } from "./player";
 import { World } from "./world";
 import { GamepadWrapper, BUTTONS, AXES } from 'gamepad-wrapper';
@@ -7,11 +8,13 @@ import { GamepadWrapper, BUTTONS, AXES } from 'gamepad-wrapper';
 
 function setup(){
     
-    const world = new World(25, 25, 5);
+    const world = new World(20, 20, 5);
     const players = new Array<Player>();
     let hasKeyboardPlayer = false;
 
     let gamepadWrapper: GamepadWrapper;
+
+    initMenu(world, players);
 
     window.addEventListener('gamepadconnected', (event) => {
         console.log("gamepad connected")
@@ -27,10 +30,15 @@ function setup(){
         }
 
         if (!event.repeat) {
-            console.log(event.key.toLowerCase());
             world.keysPressed.add(event.key.toLowerCase());
         }
+
+        if (event.key == "Escape"){
+            turnOnMenu();
+        }
     });
+
+    
 
     window.addEventListener('keyup', (event: KeyboardEvent) => {
             world.keysPressed.delete(event.key.toLowerCase());
