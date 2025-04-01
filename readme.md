@@ -7,5 +7,5 @@ X : tourner la tuile prise
 B : défausser la tuile et perdre 1 point
 Y : détruire la zone
 
-
+play it [https://lucas-isenmann.github.io/tegula/](here)
 
